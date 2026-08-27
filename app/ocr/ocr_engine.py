@@ -1,7 +1,6 @@
 import pytesseract
 from PIL import Image
 
-
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 )
@@ -19,7 +18,11 @@ def extract_text_with_details(image_path):
 
     for i in range(len(data["text"])):
         text = data["text"][i].strip()
-        confidence = float(data["conf"][i])
+
+        try:
+            confidence = float(data["conf"][i])
+        except ValueError:
+            continue
 
         if text and confidence > 0:
             results.append({
