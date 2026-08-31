@@ -1,5 +1,7 @@
 venv/
+paddle_env/
 __pycache__/
 *.pyc
-.env
-.vscode/
+
+data/processed/
+data/raw/invoice_page.png
