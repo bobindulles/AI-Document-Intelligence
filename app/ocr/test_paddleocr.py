@@ -2,6 +2,7 @@ import json
 import fitz
 from pathlib import Path
 from tkinter import Tk, filedialog
+from app.document.document_classifier import classify_document
 
 from paddleocr import PaddleOCR
 from app.document.field_extractor import extract_fields
@@ -63,10 +64,6 @@ if file_path.suffix.lower() == ".pdf":
 
     print("PDF converted successfully.")
     print("Processed image saved to:", image_path)
-
-    pdf.close()
-
-    print("PDF converted successfully.")
 
 else:
 
@@ -138,39 +135,91 @@ for res in result:
 
 
 # ============================================================
-# STEP 5: Extract invoice fields
+# STEP 5: Detect document type
 # ============================================================
 
-fields = extract_fields(items)
+classification = classify_document(items)
+
+print("\n")
+print("========================================")
+print("       DOCUMENT CLASSIFICATION")
+print("========================================")
+
+print(
+    "Document Type :",
+    classification["document_type"]
+)
+
+print(
+    "Confidence    :",
+    classification["confidence"]
+)
+
+print("\nScores:")
+
+for doc_type, score in classification["scores"].items():
+    print(f"  {doc_type}: {score}")
+
+print("========================================")
 
 
 # ============================================================
-# STEP 6: Display extracted values
+# STEP 6: Extract fields based on document type
+# ============================================================
+
+document_type = classification["document_type"]
+
+if document_type == "invoice":
+
+    fields = extract_fields(items)
+
+elif document_type == "resume":
+
+    from app.document.resume_extractor import extract_resume
+
+    result = extract_resume(items)
+    fields = result["fields"]
+
+elif document_type == "certificate":
+
+    from app.document.certificate_extractor import extract_certificate
+
+    result = extract_certificate(
+        items,
+        image_path=image_path
+    )
+
+    fields = result["fields"]
+
+else:
+
+    fields = {}
+
+
+# ============================================================
+# STEP 7: Display extracted values
 # ============================================================
 
 print("\n")
 print("========================================")
-print("       EXTRACTED INVOICE VALUES")
+print("       EXTRACTED DOCUMENT VALUES")
 print("========================================")
 
-print(
-    "Invoice Number :",
-    fields.get("invoice_number")
-)
+print("Document Type:", document_type)
 
-print(
-    "Invoice Date   :",
-    fields.get("invoice_date")
-)
+for key, value in fields.items():
 
-print(
-    "VAT Number     :",
-    fields.get("vat_number")
-)
+    label = key.replace("_", " ").title()
 
-print(
-    "Total Amount   :",
-    fields.get("total_amount")
-)
+    if isinstance(value, list):
+
+        print(f"{label}:")
+
+        for item in value:
+            print(f"  - {item}")
+
+    else:
+
+        print(f"{label} : {value}")
 
 print("========================================")
