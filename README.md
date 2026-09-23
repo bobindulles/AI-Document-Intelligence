@@ -1,14 +1,73 @@
 # AI Document Intelligence
 
-AI-based document verification system using OCR, Computer Vision, NLP, and Machine Learning.
+AI-powered document verification system with OCR, Computer Vision, NLP, and Machine Learning.
 
-## Project Goal
+## Project Objective
 
-The system extracts information from documents, understands their structure, and detects inconsistencies, anomalies, and possible signs of manipulation.
+The system analyzes documents, recognizes its format, classifies document types, extracts essential fields and finds anomalies in the document.
 
-## Current Progress
+The system is supposed to process such document types as:
 
-- Project setup
-- Document upload
-- PDF/image processing
-- OCR text extraction
+- Invoices
+- Certificates
+- Resumes
+
+The project is implemented as a document intelligence and verification pipeline.
+
+---
+
+## Currently Implemented Modules
+
+- Project set up
+- Document loading through file picker
+- PDFs and images processing
+- PDF-to-image conversion
+- OCR via PaddleOCR
+- Filtering of OCR results by confidence value
+- Document classification
+- Fields extraction of invoices
+- Fields extraction of certificates
+- Fields extraction of resumes
+- QR code detection for certificates
+- Anomaly detection using Machine Learning
+- Full-fledged document pipeline
+
+---
+
+## Workflow of the System
+
+```text
+Document
+   │
+   ▼
+File Selection
+   │
+   ▼
+PDF/Image Processing
+   │
+   ▼
+PaddleOCR
+   │
+   ├──Text
+   ├──Confidence
+   └──Coordinates
+   │
+   ▼
+Document Classification
+   │
+   ├──Invoice
+   ├──Certificate
+   └──Resume
+   │
+   ▼
+Fields Extraction
+   │
+   ├──Invoice Fields
+   ├──Certificate Fields
+   └──Resume Fields
+   │
+   ▼
+ML-based Anomaly Detection
+   │
+   ▼
+Verification Results

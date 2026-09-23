@@ -82,6 +82,16 @@ result = ocr.predict(str(image_path))
 
 print("OCR completed.")
 
+print("\n================ OCR TEXT =================")
+
+for item in items:
+    print(
+        f"{item['text']} "
+        f"(confidence={item['confidence']:.2f}, "
+        f"box={item['box']})"
+    )
+
+print("===========================================\n")
 
 # ============================================================
 # STEP 4: Extract text + coordinates
