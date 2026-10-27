@@ -210,6 +210,6 @@ Add the license applicable to this repository. Do not claim an open-source licen
 
 ## Author
 
-Bobin Dulles 
+Bobin Dulles
 AI & Data Science  
 GitHub: (https://github.com/bobindulles/AI-Document-Intelligence)
