@@ -206,6 +206,6 @@ Contributions, bug reports, and suggestions are welcome. Please document propose
 
 ## Author
 
-Bobin Dulles 
+Bobin Dulles
 AI & Data Science  
 GitHub: (https://github.com/bobindulles/AI-Document-Intelligence)
