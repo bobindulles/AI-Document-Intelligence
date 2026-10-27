@@ -204,10 +204,6 @@ The system is intended to assist document review and identify records requiring 
 
 Contributions, bug reports, and suggestions are welcome. Please document proposed changes and test them before submitting a pull request.
 
-## License
-
-Add the license applicable to this repository. Do not claim an open-source license unless one has actually been selected and included.
-
 ## Author
 
 Bobin Dulles 

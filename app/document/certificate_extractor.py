@@ -142,24 +142,36 @@ def extract_qr_data(image_path):
 # ORGANIZATION EXTRACTION
 # ============================================================
 
-def extract_organization(texts, full_text):
+def extract_organization(texts, full_text, certificate_name=None):
+
+        certificate_name = clean(certificate_name or "")
+        certificate_words = set(
+        re.findall(
+            r"[A-Za-z]+",
+            certificate_name.lower()
+        )
+    )
 
     # --------------------------------------------------------
-    # Pattern:
-    # "AMITY UNIVERSITY ONLINE hereby certifies that"
+    # METHOD 1
+    # Organization explicitly mentioned in a sentence
     # --------------------------------------------------------
 
     patterns = [
 
-        r"(.{2,100}?)\s+hereby\s+certifies\s+that",
+        r"(.{2,120}?)\s+hereby\s+certifies\s+that",
 
-        r"(.{2,100}?)\s+hereby\s+certifies",
+        r"(.{2,120}?)\s+hereby\s+certifies",
 
-        r"issued\s+by\s*[:\-]?\s*(.{2,100})",
+        r"issued\s+by\s*[:\-]?\s*(.{2,120})",
 
-        r"provided\s+by\s*[:\-]?\s*(.{2,100})",
+        r"provided\s+by\s*[:\-]?\s*(.{2,120})",
 
-        r"awarded\s+by\s*[:\-]?\s*(.{2,100})"
+        r"awarded\s+by\s*[:\-]?\s*(.{2,120})",
+
+        r"offered\s+by\s*[:\-]?\s*(.{2,120})",
+
+        r"conducted\s+by\s*[:\-]?\s*(.{2,120})"
     ]
 
     for pattern in patterns:
@@ -174,6 +186,7 @@ def extract_organization(texts, full_text):
 
             organization = clean(match.group(1))
 
+            # Remove common leading words
             organization = re.sub(
                 r"^(certificate|this|the)\s+",
                 "",
@@ -181,11 +194,22 @@ def extract_organization(texts, full_text):
                 flags=re.IGNORECASE
             )
 
-            if len(organization) > 2:
+            # Remove sentence continuation
+            organization = re.split(
+                r"\b(?:hereby|certifies|certified|awarded|"
+                r"presented|has successfully|successfully)\b",
+                organization,
+                maxsplit=1,
+                flags=re.IGNORECASE
+            )[0].strip()
+
+            if is_valid_organization(organization):
                 return organization
 
+
     # --------------------------------------------------------
-    # Search individual OCR lines
+    # METHOD 2
+    # Look for organization-like OCR lines
     # --------------------------------------------------------
 
     organization_keywords = [
@@ -194,34 +218,147 @@ def extract_organization(texts, full_text):
         "college",
         "academy",
         "school",
+        "foundation",
         "organization",
         "organisation",
         "technologies",
+        "technology",
+        "corporation",
+        "company",
+        "inc",
         "ltd",
-        "limited"
+        "limited",
+        "llp",
+        "trust",
+        "association",
+        "society",
+        "group",
+        "solutions",
+        "services",
+        "systems"
     ]
 
-    for text in texts:
+
+    candidates = []
+
+    for index, text in enumerate(texts):
 
         text = clean(text)
 
+        if not text:
+            continue
+
         lower = text.lower()
 
-        for keyword in organization_keywords:
+        # Ignore obvious certificate content
+        blocked = [
+            "certificate",
+            "completion",
+            "congratulations",
+            "successfully completed",
+            "recipient",
+            "verification",
+            "certificate id",
+            "credential",
+            "authorized signatory",
+            "authorised signatory",
+            "signature"
+        ]
 
-            if keyword in lower:
+        if any(word in lower for word in blocked):
+            continue
 
-                # Avoid certificate title
-                if (
-                    "certificate" in lower
-                    and len(text.split()) > 5
-                ):
-                    continue
 
-                return text
+        # Check organization keywords
+        keyword_match = any(
+            keyword in lower
+            for keyword in organization_keywords
+        )
+
+        if keyword_match:
+
+            candidates.append(text)
+
+
+    # Prefer the shortest clean organization-looking candidate.
+    # This avoids grabbing an entire sentence containing
+    # an organization keyword.
+    if candidates:
+
+        candidates.sort(
+            key=lambda x: (
+                len(x.split()) > 8,
+                len(x)
+            )
+        )
+
+        for candidate in candidates:
+
+            if is_valid_organization(candidate):
+                return candidate
+
 
     return None
 
+def is_valid_organization(text):
+
+    if not text:
+        return False
+
+    text = clean(text)
+
+    if len(text) < 3:
+        return False
+
+    lower = text.lower()
+
+    # Things that are definitely not organization names
+    blocked_phrases = [
+        "certificate",
+        "completion",
+        "congratulations",
+        "successfully completed",
+        "recipient",
+        "verification",
+        "certificate id",
+        "credential",
+        "authorized signatory",
+        "authorised signatory",
+        "signature",
+        "this is to certify",
+        "hereby certifies"
+    ]
+
+    for phrase in blocked_phrases:
+        if phrase in lower:
+            return False
+
+
+    # URLs are not organization names
+    if (
+        "http://" in lower
+        or "https://" in lower
+        or "www." in lower
+    ):
+        return False
+
+
+    # Must contain actual alphabetic characters
+    letters = sum(
+        char.isalpha()
+        for char in text
+    )
+
+    if letters < 3:
+        return False
+
+
+    # Avoid very long sentences
+    if len(text.split()) > 12:
+        return False
+
+
+    return True
 
 # ============================================================
 # RECIPIENT NAME EXTRACTION
@@ -287,18 +424,25 @@ def extract_certificate_name(texts, full_text):
 
     patterns = [
 
+        # Certificate of Completion / Certificate of Completion Foundation
+        r"(certificate\s+of\s+completion(?:\s+[A-Za-z0-9&'-]+)?)",
+
+        # Course Completion Certificate
         r"(course\s+completion\s+certificate)",
 
-        r"(certificate\s+of\s+[A-Za-z0-9 &'-]+)",
-
+        # Achievement Certificate
         r"(achievement\s+certificate)",
 
+        # Participation Certificate
         r"(participation\s+certificate)",
 
+        # Completion Certificate
         r"(completion\s+certificate)",
 
+        # Training Certificate
         r"(training\s+certificate)",
 
+        # Internship Certificate
         r"(internship\s+certificate)"
     ]
 
@@ -312,12 +456,22 @@ def extract_certificate_name(texts, full_text):
 
         if match:
 
-            return clean(match.group(1))
+            title = clean(match.group(1))
 
-    # --------------------------------------------------------
-    # Search uppercase OCR lines
-    # --------------------------------------------------------
+            # Stop accidental sentence continuation
+            title = re.split(
+                r"\b(?:this\s+is\s+to\s+certify|"
+                r"hereby\s+certifies|"
+                r"awarded\s+to|"
+                r"presented\s+to)\b",
+                title,
+                maxsplit=1,
+                flags=re.IGNORECASE
+            )[0]
 
+            return title.strip()
+
+    # Search individual OCR lines
     for text in texts:
 
         text = clean(text)
@@ -325,12 +479,13 @@ def extract_certificate_name(texts, full_text):
         if not text:
             continue
 
-        if text.isupper() and "CERTIFICATE" in text:
-
+        if (
+            "certificate" in text.lower()
+            and len(text.split()) <= 8
+        ):
             return text
 
     return None
-
 
 # ============================================================
 # COURSE / PROGRAM NAME
@@ -931,6 +1086,13 @@ def extract_certificate(items, image_path=None):
 
         texts.append(text)
         valid_items.append(item)
+
+        print("\n========== CERTIFICATE OCR LINES ==========")
+
+        for i, text in enumerate(texts):
+            print(f"[{i}] {text}")
+
+        print("===========================================\n")
 
     full_text = clean(
         " ".join(texts)
